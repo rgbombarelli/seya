@@ -19,7 +19,7 @@ class VariationalDense(Layer):
             hand for sampling random numbers. Make sure your batch size is kept
             fixed during training. You can use any batch size for testing.
 
-        regularizer_scale: By default the regularization is already proberly
+        regularizer_scale: By default the regularization is already properly
             scaled if you use binary or categorical crossentropy cost functions.
             In most cases this regularizers should be kept fixed at one.
 
@@ -27,10 +27,10 @@ class VariationalDense(Layer):
     def __init__(self, output_dim, batch_size, init='glorot_uniform',
                  activation='tanh',
                  weights=None, input_dim=None, regularizer_scale=1,
-                 prior_mean=0, prior_logsigma=1, **kwargs):
+                 prior_mean=0, prior_logsigma=1,  **kwargs):
         self.prior_mean = prior_mean
         self.prior_logsigma = prior_logsigma
-        self.regularizer_scale = regularizer_scale
+        self.regularizer_scale = K.variable(regularizer_scale)
         self.batch_size = batch_size
         self.init = initializations.get(init)
         self.activation = activations.get(activation)
@@ -51,7 +51,7 @@ class VariationalDense(Layer):
         self.b_logsigma = K.zeros((self.output_dim,))
 
         self.trainable_weights = [self.W_mean, self.b_mean, self.W_logsigma,
-                       self.b_logsigma]
+                                  self.b_logsigma]
 
         self.regularizers = []
         reg = self.get_variational_regularization(self.get_input())
@@ -72,14 +72,13 @@ class VariationalDense(Layer):
 
     def _get_output(self, X, train=False):
         mean, logsigma = self.get_mean_logsigma(X)
-        if train:
-            if K._BACKEND == 'theano':
-                eps = K.random_normal((X.shape[0], self.output_dim))
-            else:
-                eps = K.random_normal((self.batch_size, self.output_dim))
-            return mean + K.exp(logsigma) * eps
+        # if train:a
+        # We prefer sample statitically also during prediction
+        if K._BACKEND == 'theano':
+            eps = K.random_normal((X.shape[0], self.output_dim))
         else:
-            return mean
+            eps = K.random_normal((self.batch_size, self.output_dim))
+        return mean + K.exp(logsigma) * eps
 
     def get_output(self, train=False):
         X = self.get_input()
@@ -116,3 +115,4 @@ class TimeDistributedVAE(VariationalDense):
     @property
     def output_shape(self):
         return (self.input_shape[0], self.time_length, self.output_dim)
+
