@@ -36,7 +36,9 @@ class GaussianKL(Regularizer):
         kl = (self.prior_logsigma - logsigma +
               0.5 * (-1 + K.exp(2 * logsigma) + (mean - self.prior_mean) ** 2) /
               K.exp(2 * self.prior_logsigma))
-        loss += K.mean(kl) * self.regularizer_scale
+        ## TEMPORARY CHANGE: scale regularizer more slowly than sampling
+        loss += K.mean(kl) * (self.regularizer_scale) ** 2
+        ## TEMPORARY CHANGE: print kl raw and scaled contribution to loss
         return loss
 
     def get_config(self):
